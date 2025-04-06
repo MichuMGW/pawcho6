@@ -29,14 +29,14 @@ WORKDIR /usr/app
 # Kopiowanie plików z etapu 1 do etapu 2
 COPY --from=stage1 /usr/app /usr/app
 
-COPY default.conf /etc/nginx/conf.d/default.conf
+COPY --from=stage1 /usr/app/default.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80 8080
+EXPOSE 80 3000
 
 # Healthcheck
 # Sprawdzenie dostępności aplikacji co 10 sekund, z timeoutem 3 sekundy
 HEALTHCHECK --interval=10s --timeout=1s \
-    CMD curl -f http://localhost:80 || exit 1
+    CMD curl -f http://localhost:80/ || exit 1
 
 # Uruchomienie aplikacji i nginx
 CMD ["sh", "-c", "node /usr/app/index.js & nginx -g 'daemon off;'"]
