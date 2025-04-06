@@ -1,23 +1,18 @@
-# syntax=docker:dockerfile:1.4
+# syntax=docker/dockerfile:1.2
+
+# Etap 1
 FROM scratch AS stage1
 ADD alpine-minirootfs-3.21.3-x86_64.tar /
-
-# Ustawienie zmiennej wersji aplikacji
-ARG VERSION="1.0.0"
-ENV VERSION=$VERSION
 
 # Deklaracja katalogu roboczego
 WORKDIR /usr/app
 
 # Instalacja nodejs i npm
-RUN apk add --no-cache nodejs npm
+RUN apk add --no-cache openssh-client git nodejs npm
 
-# Kopiowanie pliku aplikacji i zależności do kontenera
-COPY ./ index.js package.json ./
+RUN mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-# Instalacja zależności
-RUN npm install
-RUN --mount=type=ssh git clone git@github.com:MichuMGW/pawcho6.git
+RUN --mount=type=ssh git clone git@github.com:MichuMGW/pawcho6.git && npm install
 
 # Etap 2
 FROM nginx:latest AS stage2
@@ -26,18 +21,24 @@ FROM nginx:latest AS stage2
 ARG VERSION="1.0.0"
 ENV VERSION=$VERSION
 
+WORKDIR /usr/app
+
+# Kopiowanie plików z etapu 1 do etapu 2
+COPY --from=stage1 /usr/app /usr/app
+
+COPY default.conf /etc/nginx/conf.d/default.conf
+
 # Instalacja nodejs
 RUN apt-get update && apt-get install -y nodejs
 
-# Kopiowanie plików z etapu 1 do etapu 2
-COPY --from=stage1 /usr/app /usr/share/nginx/html
+
 
 EXPOSE 80
 
 # Healthcheck
 # Sprawdzenie dostępności aplikacji co 10 sekund, z timeoutem 3 sekundy
 HEALTHCHECK --interval=10s --timeout=3s \
-    CMD curl -f http://localhost/ || exit 1
+    CMD curl -f http://localhost/80 || exit 1
 
-# Uruchomienie aplikacji
-CMD ["node", "/usr/share/nginx/html/index.js"]
+# Uruchomienie aplikacji i nginx
+CMD ["sh", "-c", "node /usr/app/index.js & nginx -g 'daemon off;'"]
