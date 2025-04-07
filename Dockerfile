@@ -10,10 +10,11 @@ WORKDIR /usr/app
 # Instalacja nodejs i npm
 RUN apk add --no-cache openssh-client git nodejs npm
 
+# Utworzenie katalogu .ssh i dodanie klucza SSH do znanych hostów
 RUN mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
+# Klonowanie repozytorium z github
 RUN --mount=type=ssh git clone git@github.com:MichuMGW/pawcho6.git . && npm install
-
 
 # Etap 2
 FROM nginx:latest AS stage2
@@ -27,11 +28,10 @@ ENV VERSION=$VERSION
 WORKDIR /usr/app
 
 # Kopiowanie plików z etapu 1 do etapu 2
-COPY --from=stage1 /usr/app /usr/app
-
+COPY --from=stage1 /usr/app/ /usr/app/
 COPY --from=stage1 /usr/app/default.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80 3000
+EXPOSE 80 8080
 
 # Healthcheck
 # Sprawdzenie dostępności aplikacji co 10 sekund, z timeoutem 3 sekundy
