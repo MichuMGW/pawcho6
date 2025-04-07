@@ -24,6 +24,7 @@ docker images
 ```shell
 docker push ghcr.io/michumgw/pawcho6:lab6
 ```
+![Image](LAB6_img/docker-push.png)
 # 6. Uruchomienie kontenera
 ```shell
 docker run -d --rm --name lab6 -p 80:80 ghcr.io/michumgw/pawcho6:lab6
